@@ -472,3 +472,8 @@ html,body{overflow-x:clip}
 .contact-form .hp{position:absolute;left:-9999px;width:1px;height:1px;opacity:0}
 .contact-form button:disabled{cursor:default}
 
+/* desktop: the gathered board's columns span the whole canvas with equal margins on both sides */
+@media (min-width:861px){
+  .board .pcard{--cw:clamp(118px,25%,190px);
+    left:calc(var(--sx,var(--x)) * (1 - var(--g,1)) + (5% + var(--xf,0) * (90% - var(--cw))) * var(--g,1))}
+}
