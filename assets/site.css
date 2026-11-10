@@ -477,3 +477,28 @@ html,body{overflow-x:clip}
   .board .pcard{--cw:clamp(118px,25%,190px);
     left:calc(var(--sx,var(--x)) * (1 - var(--g,1)) + (5% + var(--xf,0) * (90% - var(--cw))) * var(--g,1))}
 }
+
+/* phones: tap targets, a header with every link, a hero whose bottom row stays clear, and essay
+   figures wide enough to read */
+.agent-cursor.flip .who{position:absolute;right:calc(100% - 6px);top:0}
+.prose a.pill{text-decoration:none}
+@media(hover:none){.tile:hover,.step:hover{transform:none}.get:hover{transform:rotate(var(--rot))}}
+@media(max-width:860px){
+  .split>.sec-head{padding-bottom:20px}
+}
+@media(max-width:600px){
+  .nav .nav-cta::after{display:none}
+  .nav a:not(.nav-cta){padding-block:10px}
+  .static-hero .set-tag{display:none}
+  .replay{padding:12px 0;margin-block:-12px}
+  .footer-inner{gap:6px}
+  .footer-links{gap:24px}
+  .footer-links a{padding-block:11px}
+  .prose figure{grid-template-columns:minmax(0,1fr);margin-inline:-8px;padding:14px 12px;overflow-x:auto;overscroll-behavior-x:contain;
+    background:linear-gradient(90deg,#fff 30%,rgba(255,255,255,0)) left/36px 100% no-repeat local,linear-gradient(270deg,#fff 30%,rgba(255,255,255,0)) right/36px 100% no-repeat local,
+      radial-gradient(farthest-side at 0 50%,rgba(17,17,17,.14),transparent) left/12px 100% no-repeat scroll,radial-gradient(farthest-side at 100% 50%,rgba(17,17,17,.14),transparent) right/12px 100% no-repeat scroll,#fff}
+  .prose figure .toon{min-width:600px}
+}
+@media(min-width:350px) and (max-width:600px){
+  .nav a:not(.nav-cta){display:inline}
+}

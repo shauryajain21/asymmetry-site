@@ -126,6 +126,8 @@
     const b = board.getBoundingClientRect(), r = card.getBoundingClientRect();
     cursor.style.setProperty('--ax', `${r.left - b.left + r.width * .62}px`);
     cursor.style.setProperty('--ay', `${r.top - b.top + r.height * .55}px`);
+    // Near the right edge the name tag would be cut off, so it hangs to the left of the arrow instead.
+    cursor.classList.toggle('flip', r.left - b.left + r.width * .62 + 20 + who.parentElement.offsetWidth > b.width - 8);
   };
   const reset = set => set.querySelectorAll('.pcard').forEach(c => { c.classList.remove('rejected', 'match'); c.querySelector('.verdict').textContent = ''; });
   const setAgent = a => {
