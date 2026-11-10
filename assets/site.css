@@ -502,3 +502,17 @@ html,body{overflow-x:clip}
 @media(min-width:350px) and (max-width:600px){
   .nav a:not(.nav-cta){display:inline}
 }
+/* phones: the scroll story on a tall board that waits below the headline and slides up to fill the screen */
+.set-tabs .short{display:none}
+@media(max-width:600px){.set-tabs .long{display:none}.set-tabs .short{display:inline}}
+.mobile-hero .hero-scroll{height:400vh;height:400svh;margin-bottom:-60vh;margin-bottom:-60svh}
+.mobile-hero .hero-sticky{height:100vh;height:100svh}
+.mobile-hero .hero-grid{align-items:start;padding-top:92px}
+.mobile-hero .board-slot{display:none}
+.mobile-hero .hero-copy{transform:translateY(calc((1 - var(--copy,1)) * -32px))}
+.mobile-hero .hero-copy h1{font-size:40px}
+.mobile-hero .board .pcard{width:clamp(96px,29%,190px);padding:6px}
+.mobile-hero .pmeta .store,.mobile-hero .pmeta b{font-size:11px}
+.mobile-hero .verdict{font-size:10px;max-width:calc(100% - 12px);overflow:hidden;text-overflow:ellipsis}
+.mobile-hero .set-tag{max-width:calc(100% - 28px)}
+.mobile-hero .set-tag span{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
