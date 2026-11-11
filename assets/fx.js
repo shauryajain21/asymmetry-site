@@ -4,7 +4,8 @@
    visitor scrolls, the board grows to fill the screen, its listings move from products to services
    to food and restaurants, then the camera pulls back on a dense, endless canvas of listings that the
    agent checks off by the hundred, and finally the canvas pops into the rest of the page.
-   Small screens, touch and reduced motion get a static board with one finished search. */
+   Phones get the same story on a tall board that slides up under the headline. Touch tablets and
+   reduced motion get a static board with one finished search. */
 (() => {
   const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
   const finePointer = matchMedia('(hover: hover) and (pointer: fine)').matches;
@@ -79,7 +80,7 @@
   // Stage tabs across the top: every stage is listed and the current one is filled, so the change reads at a glance.
   const tabs = document.createElement('div');
   tabs.className = 'set-tabs';
-  tabs.innerHTML = [...board.querySelectorAll('.board-set')].map(s => `<i data-k="${s.dataset.set}">${s.dataset.name}</i>`).join('') + '<i data-k="all">Everything</i>';
+  tabs.innerHTML = [...board.querySelectorAll('.board-set')].map(s => `<i data-k="${s.dataset.set}">${s.dataset.short ? `<span class="long">${s.dataset.name}</span><span class="short">${s.dataset.short}</span>` : s.dataset.name}</i>`).join('') + '<i data-k="all">Everything</i>';
   board.appendChild(tabs);
   const stage$ = k => {
     board.dataset.stage = k;
@@ -107,7 +108,9 @@
   };
   const wait = ms => new Promise(r => setTimeout(r, ms));
   const shuffle = xs => xs.map(x => [Math.random(), x]).sort((a, b) => a[0] - b[0]).map(x => x[1]);
-  const isStatic = reduce || !finePointer || matchMedia('(max-width: 860px)').matches;
+  const narrow = matchMedia('(max-width: 860px)').matches;
+  const isStatic = reduce || (!finePointer && !narrow);
+  const mobile = !isStatic && narrow;
   let current = 0, round = 0, runId = 0, visible = true;
 
   const show = i => {
@@ -121,11 +124,22 @@
   };
 
   let target = null;
+  let glide;
+  // Near the right edge the name tag would be cut off, so it hangs to the left of the arrow instead.
+  // Checked every frame while the cursor glides, so the tag never pokes off either edge on the way.
+  const placeTag = () => {
+    const b = board.getBoundingClientRect(), x = cursor.getBoundingClientRect().left - b.left;
+    cursor.classList.toggle('flip', x + 20 + who.parentElement.offsetWidth > b.width - 14);
+  };
   const moveTo = card => {
     target = card;
     const b = board.getBoundingClientRect(), r = card.getBoundingClientRect();
     cursor.style.setProperty('--ax', `${r.left - b.left + r.width * .62}px`);
     cursor.style.setProperty('--ay', `${r.top - b.top + r.height * .55}px`);
+    cancelAnimationFrame(glide);
+    const t0 = performance.now();
+    const tick = () => { placeTag(); if (performance.now() - t0 < 600) glide = requestAnimationFrame(tick); };
+    tick();
   };
   const reset = set => set.querySelectorAll('.pcard').forEach(c => { c.classList.remove('rejected', 'match'); c.querySelector('.verdict').textContent = ''; });
   const setAgent = a => {
@@ -185,13 +199,22 @@
     return;
   }
 
+  if (mobile) {
+    document.documentElement.classList.add('mobile-hero');
+    board.style.setProperty('--g', '1');
+    board.style.setProperty('--cs', '1');
+  }
+
   // The dense canvas: every drawing on the board, tiled hundreds of times.
   const dense = document.createElement('div');
   dense.className = 'board-dense';
   const tints = ['#ffe1cf', '#dbe8ff', '#dff3e4', '#fff0c2', '#f0e0ff'];
   const pics = [...board.querySelectorAll('.pimg svg')].map(svg =>
     'data:image/svg+xml;utf8,' + encodeURIComponent(`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 90" stroke="#111" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">${svg.innerHTML}</svg>`));
-  const N = 640;
+  // A phone's board is tall and narrow, so its canvas gets fewer columns and enough rows to fill it.
+  const cols = mobile ? 14 : 32;
+  const N = mobile ? cols * Math.ceil(sticky.offsetHeight / sticky.offsetWidth * cols * 1.25) : 640;
+  if (mobile) dense.style.gridTemplateColumns = `repeat(${cols},1fr)`;
   dense.innerHTML = Array.from({ length: N }, (_, i) =>
     `<div class="dcard" style="--tint:${tints[i % 5]};--r:${(((i * 37) % 9) - 4) * .8}deg"><img src="${pics[(i * 7) % pics.length]}" alt=""></div>`).join('');
   board.insertBefore(dense, tag);
@@ -230,26 +253,38 @@
   const ease = t => t < .5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2;
   const lerp = (a, b, t) => a + (b - a) * t;
   let checkedShown = 0;
+  // Where each phase starts, as a share of the pinned scroll. Phones scroll a shorter stage (see site.css).
+  const T = mobile
+    ? { gather: .12, services: .3, food: .46, dense: .6, denseLen: .18, pop: .8, popLen: .15 }
+    : { gather: .16, services: .3, food: .44, dense: .58, denseLen: .2, pop: .78, popLen: .16 };
   const layout = () => {
-    const total = stage.offsetHeight - innerHeight;
+    const total = stage.offsetHeight - sticky.offsetHeight;
     const p = clamp(-stage.getBoundingClientRect().top / total);
     const st = sticky.getBoundingClientRect();
-    // 1. gather: the canvas fills the screen from the start; the scattered cards gather into the board and grow
-    const g = ease(clamp(p / .16));
-    Object.assign(board.style, { left: '0px', top: '64px', width: `${st.width}px`, height: `${st.height - 64}px` });
-    board.style.setProperty('--g', String(g));
-    // the opening wall's columns sit 16% apart, so on narrow screens the cards start smaller to keep a gap
-    const cs0 = Math.min(.86, st.width * .145 / (sets[0].querySelector('.pcard').offsetWidth || 190));
-    board.style.setProperty('--cs', String(lerp(cs0, 1, g)));
+    const g = ease(clamp(p / T.gather));
+    if (mobile) {
+      // 1. phones: the board waits below the headline, then slides up to fill the screen as the headline lifts away
+      const below = copy.offsetTop + copy.offsetHeight + 24;
+      Object.assign(board.style, { left: '0px', top: `${lerp(below, 64, g)}px`, width: `${st.width}px`, height: `${st.height - 64}px` });
+      if (target) moveTo(target);
+    } else {
+      // 1. gather: the canvas fills the screen from the start; the scattered cards gather into the board and grow
+      Object.assign(board.style, { left: '0px', top: '64px', width: `${st.width}px`, height: `${st.height - 64}px` });
+      board.style.setProperty('--g', String(g));
+      // the opening wall's columns sit 16% apart, so on narrow screens the cards start smaller to keep a gap
+      const cs0 = Math.min(.86, st.width * .145 / (sets[0].querySelector('.pcard').offsetWidth || 190));
+      board.style.setProperty('--cs', String(lerp(cs0, 1, g)));
+      if (target && g > 0 && g < 1) moveTo(target);
+    }
     board.classList.toggle('pre', g < .5);
-    if (target && g > 0 && g < 1) moveTo(target);
-    copy.style.setProperty('--copy', String(1 - g));
+    // on phones the board slides over the headline, so the headline clears out of the way first
+    copy.style.setProperty('--copy', String(1 - clamp(mobile ? g * 3 : g)));
     // 2. listings: products -> services -> food
-    const want = p < .3 ? 0 : p < .44 ? 1 : 2;
+    const want = p < T.services ? 0 : p < T.food ? 1 : 2;
     if (want !== current) show(want);
     // 3. dense: the camera pulls back on an endless canvas, the agent checks listings by the hundred
-    const dIn = clamp((p - .58) / .05);
-    const d = ease(clamp((p - .58) / .2));
+    const dIn = clamp((p - T.dense) / .05);
+    const d = ease(clamp((p - T.dense) / T.denseLen));
     board.classList.toggle('is-dense', dIn > 0);
     dense.style.opacity = String(dIn);
     if (dIn > 0) {
@@ -264,13 +299,13 @@
     }
     winner.classList.toggle('win', d > .92);
     // 4. pop: the canvas bursts past the screen and dissolves into the page
-    const e = ease(clamp((p - .78) / .16));
+    const e = ease(clamp((p - T.pop) / T.popLen));
     const zoom = lerp(1, .32, d) * (1 + e * 9);
     dense.style.transform = `translate(-50%, -50%) scale(${zoom})`;
-    dense.style.filter = e > 0 ? `blur(${e * 6}px)` : '';
+    dense.style.filter = e > 0 && !mobile ? `blur(${e * 6}px)` : '';
     board.style.setProperty('--board-o', String(1 - clamp((e - .25) / .75)));
     board.style.setProperty('--tag-o', String(1 - clamp(dIn * 1.5 + e * 3)));
-    const ui = String(Math.min(clamp((g - .5) * 2), 1 - clamp(e * 3)));
+    const ui = String(Math.min(mobile ? 1 : clamp((g - .5) * 2), 1 - clamp(e * 3)));
     tag.style.opacity = ui;
     tabs.style.opacity = ui;
     board.style.setProperty('--swarm-o', String(dIn * (1 - clamp(e * 4))));
