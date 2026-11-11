@@ -463,7 +463,7 @@ html,body{overflow-x:clip}
 .board.pre{background-color:#fff}
 .board .pcard{left:calc(var(--sx,var(--x)) * (1 - var(--g,1)) + var(--x) * var(--g,1));top:calc(var(--sy,var(--y)) * (1 - var(--g,1)) + var(--y) * var(--g,1));
   transform:translate(calc(var(--px,0px) + var(--ex,0px)),calc(var(--py,0px) + var(--ey,0px))) rotate(calc(var(--rot) * (.25 + .75 * var(--g,1)))) scale(calc(var(--s,1) * var(--cs,1)))}
-.static-hero .hero-scroll{margin-top:0}
+.static-hero .hero-scroll{margin-top:0;margin-bottom:0}
 .static-hero .hero-grid{padding-block:28px 0;gap:24px}
 .static-hero .board{width:100%!important;margin:20px 0 0}
 /* desktop opens scattered from the first paint; no transitions until the first layout */
