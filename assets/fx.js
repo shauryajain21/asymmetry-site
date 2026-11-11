@@ -124,13 +124,19 @@
   };
 
   let target = null;
+  let flipT;
   const moveTo = card => {
     target = card;
     const b = board.getBoundingClientRect(), r = card.getBoundingClientRect();
-    cursor.style.setProperty('--ax', `${r.left - b.left + r.width * .62}px`);
+    const x = r.left - b.left + r.width * .62, from = cursor.getBoundingClientRect().left - b.left;
+    cursor.style.setProperty('--ax', `${x}px`);
     cursor.style.setProperty('--ay', `${r.top - b.top + r.height * .55}px`);
-    // Near the right edge the name tag would be cut off, so it hangs to the left of the arrow instead.
-    cursor.classList.toggle('flip', r.left - b.left + r.width * .62 + 20 + who.parentElement.offsetWidth > b.width - 8);
+    // Near the right edge the name tag would be cut off, so it hangs to the left of the arrow instead,
+    // and stays there until the cursor has finished gliding away from that edge.
+    const clips = x => x + 20 + who.parentElement.offsetWidth > b.width - 8;
+    cursor.classList.toggle('flip', clips(x) || clips(from));
+    clearTimeout(flipT);
+    flipT = setTimeout(() => { if (target === card) cursor.classList.toggle('flip', clips(x)); }, 550);
   };
   const reset = set => set.querySelectorAll('.pcard').forEach(c => { c.classList.remove('rejected', 'match'); c.querySelector('.verdict').textContent = ''; });
   const setAgent = a => {
@@ -269,7 +275,7 @@
     }
     board.classList.toggle('pre', g < .5);
     // on phones the board slides over the headline, so the headline clears out of the way first
-    copy.style.setProperty('--copy', String(1 - clamp(mobile ? g * 1.8 : g)));
+    copy.style.setProperty('--copy', String(1 - clamp(mobile ? g * 3 : g)));
     // 2. listings: products -> services -> food
     const want = p < T.services ? 0 : p < T.food ? 1 : 2;
     if (want !== current) show(want);
