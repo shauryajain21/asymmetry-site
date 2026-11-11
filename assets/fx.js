@@ -124,19 +124,22 @@
   };
 
   let target = null;
-  let flipT;
+  let glide;
+  // Near the right edge the name tag would be cut off, so it hangs to the left of the arrow instead.
+  // Checked every frame while the cursor glides, so the tag never pokes off either edge on the way.
+  const placeTag = () => {
+    const b = board.getBoundingClientRect(), x = cursor.getBoundingClientRect().left - b.left;
+    cursor.classList.toggle('flip', x + 20 + who.parentElement.offsetWidth > b.width - 14);
+  };
   const moveTo = card => {
     target = card;
     const b = board.getBoundingClientRect(), r = card.getBoundingClientRect();
-    const x = r.left - b.left + r.width * .62, from = cursor.getBoundingClientRect().left - b.left;
-    cursor.style.setProperty('--ax', `${x}px`);
+    cursor.style.setProperty('--ax', `${r.left - b.left + r.width * .62}px`);
     cursor.style.setProperty('--ay', `${r.top - b.top + r.height * .55}px`);
-    // Near the right edge the name tag would be cut off, so it hangs to the left of the arrow instead,
-    // and stays there until the cursor has finished gliding away from that edge.
-    const clips = x => x + 20 + who.parentElement.offsetWidth > b.width - 8;
-    cursor.classList.toggle('flip', clips(x) || clips(from));
-    clearTimeout(flipT);
-    flipT = setTimeout(() => { if (target === card) cursor.classList.toggle('flip', clips(x)); }, 550);
+    cancelAnimationFrame(glide);
+    const t0 = performance.now();
+    const tick = () => { placeTag(); if (performance.now() - t0 < 600) glide = requestAnimationFrame(tick); };
+    tick();
   };
   const reset = set => set.querySelectorAll('.pcard').forEach(c => { c.classList.remove('rejected', 'match'); c.querySelector('.verdict').textContent = ''; });
   const setAgent = a => {
